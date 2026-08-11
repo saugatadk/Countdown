@@ -1,930 +1,1834 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>Countdown</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@800;900&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
+    />
+    <title>Countdown</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@800;900&family=Inter:wght@800;900&family=JetBrains+Mono:wght@700;800&family=Outfit:wght@700;800;900&family=Roboto:wght@800;900&family=Saira:wght@800;900&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
 
-  :root {
-    --color-bg: #0f0f0f;
-    --color-text: #ffffff;
-    --color-text-dim: rgba(255, 255, 255, 0.35);
-    --color-finished: #ff3b30;
-    --font-timer: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Segoe UI', Roboto, sans-serif;
-  }
+      :root {
+        --color-bg: #0f0f0f;
+        --color-text: #ffffff;
+        --color-text-dim: rgba(255, 255, 255, 0.35);
+        --color-finished: #ff3b30;
+        --font-timer:
+          "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Display",
+          "Segoe UI", Roboto, sans-serif;
+        --font-scale-y: 1.08;
+      }
 
-  html, body {
-    height: 100%;
-    width: 100%;
-    overflow: hidden;
-    background: var(--color-bg);
-    color: var(--color-text);
-    font-family: var(--font-timer);
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    user-select: none;
-    -webkit-user-select: none;
-    -webkit-touch-callout: none;
-    touch-action: manipulation;
-  }
+      html,
+      body {
+        height: 100%;
+        width: 100%;
+        overflow: hidden;
+        background: var(--color-bg);
+        color: var(--color-text);
+        font-family: var(--font-timer);
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+        user-select: none;
+        -webkit-user-select: none;
+        -webkit-touch-callout: none;
+        touch-action: manipulation;
+      }
 
-  body {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-  }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
+      }
 
-  body.running {
-    cursor: none;
-  }
+      body.running {
+        cursor: none;
+      }
 
-  body.running.mouse-active {
-    cursor: auto;
-  }
+      body.running.mouse-active {
+        cursor: auto;
+      }
 
-  body.editing {
-    cursor: none;
-  }
+      body.editing {
+        cursor: auto;
+      }
 
-  #app {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    padding: clamp(12px, 4vw, 24px);
-    position: relative;
-  }
+      #app {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        height: 100%;
+        padding: clamp(12px, 4vw, 24px);
+        position: relative;
+      }
 
-  /* Timer Container */
-  .timer-container {
-    position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    outline: none;
-    -webkit-tap-highlight-color: transparent;
-    width: 100%;
-    max-width: 100%;
-  }
+      /* Timer Container */
+      .timer-container {
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
+        width: 100%;
+        max-width: 100%;
+      }
 
-  .timer-container.editing,
-  .timer-container.editing .timer-segment,
-  .timer-container.editing .seg-input {
-    cursor: none;
-  }
+      .timer-container.editing,
+      .timer-container.editing .timer-segment,
+      .timer-container.editing .seg-input {
+        cursor: pointer;
+      }
 
-  .timer-container.finished .timer-digits {
-    color: var(--color-finished);
-  }
+      .timer-container.finished .timer-digits {
+        color: var(--color-finished);
+      }
 
-  .timer-container.paused .timer-display {
-    opacity: 0.5;
-  }
+      .timer-container.paused .timer-display {
+        opacity: 0.5;
+      }
 
-  /* Timer Display */
-  .timer-display {
-    font-size: clamp(8rem, 26vw, 34rem);
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-    font-feature-settings: "tnum" 1;
-    letter-spacing: -0.02em;
-    line-height: 1;
-    text-align: center;
-    color: var(--color-text);
-    transition: color 0.4s ease, opacity 0.3s ease;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0;
-    transform: scaleY(1.08);
-    transform-origin: center;
-  }
+      /* Timer Display */
+      .timer-display {
+        font-size: clamp(8.5rem, 28vw, 36rem);
+        font-weight: 800;
+        font-variant-numeric: tabular-nums;
+        font-feature-settings: "tnum" 1;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        text-align: center;
+        color: var(--color-text);
+        transition:
+          color 0.4s ease,
+          opacity 0.3s ease,
+          transform 0.2s ease,
+          font-size 0.35s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0;
+        transform: scaleY(var(--font-scale-y));
+        transform-origin: center;
+      }
 
-  .timer-display.has-hours {
-    font-size: clamp(7rem, 22vw, 20rem);
-  }
+      .timer-display.has-hours {
+        font-size: clamp(6.5rem, 19.5vw, 26rem);
+      }
 
-  .timer-sep {
-    pointer-events: none;
-    color: var(--color-text);
-    transition: opacity 0.2s ease;
-    user-select: none;
-  }
+      .timer-sep {
+        pointer-events: none;
+        color: var(--color-text);
+        transition: opacity 0.2s ease;
+        user-select: none;
+      }
 
-  .timer-segment {
-    position: relative;
-    display: inline-block;
-    cursor: text;
-    border-radius: 8px;
-    padding: 0 0.04em;
-    transition: background 0.15s ease, transform 0.1s ease;
-    outline: none;
-    -webkit-tap-highlight-color: rgba(255, 255, 255, 0.1);
-    touch-action: manipulation;
-  }
+      .timer-segment {
+        position: relative;
+        display: inline-block;
+        cursor: pointer;
+        border-radius: 8px;
+        padding: 0 0.08em;
+        transition:
+          background 0.15s ease,
+          box-shadow 0.15s ease;
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
+        touch-action: manipulation;
+      }
 
-  .timer-segment:hover, .timer-segment:active {
-    background: rgba(255, 255, 255, 0.08);
-  }
+      .timer-segment:hover,
+      .timer-segment:active {
+        background: rgba(255, 255, 255, 0.08);
+      }
 
-  .timer-segment .seg-value {
-    display: block;
-    min-width: 1ch;
-    text-align: center;
-    pointer-events: none;
-  }
+      .timer-segment.editing-active {
+        background: rgba(255, 255, 255, 0.14);
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.25);
+      }
 
-  .timer-segment .seg-input {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: transparent;
-    border: none;
-    outline: none;
-    color: transparent;
-    caret-color: rgba(255, 255, 255, 0.8);
-    font-size: inherit;
-    font-weight: inherit;
-    font-family: inherit;
-    font-variant-numeric: inherit;
-    font-feature-settings: inherit;
-    letter-spacing: inherit;
-    line-height: inherit;
-    text-align: center;
-    padding: 0;
-    margin: 0;
-    display: block;
-    z-index: 2;
-    -webkit-appearance: none;
-    appearance: none;
-    border-radius: 8px;
-  }
+      .timer-segment .seg-value {
+        display: block;
+        min-width: 1ch;
+        text-align: center;
+        pointer-events: none;
+        opacity: 1 !important;
+      }
 
-  .timer-container.editing .seg-input {
-    caret-color: rgba(255, 255, 255, 0.8);
-  }
+      .timer-segment .seg-input {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: transparent !important;
+        border: none !important;
+        outline: none !important;
+        color: transparent !important;
+        caret-color: transparent !important;
+        font-size: inherit;
+        font-weight: inherit;
+        font-family: inherit;
+        font-variant-numeric: inherit;
+        font-feature-settings: inherit;
+        letter-spacing: inherit;
+        line-height: inherit;
+        text-align: center;
+        padding: 0;
+        margin: 0;
+        display: block;
+        z-index: 2;
+        -webkit-appearance: none;
+        appearance: none;
+        border-radius: 8px;
+      }
 
-  .timer-segment .seg-input::selection {
-    background: rgba(255, 255, 255, 0.2);
-  }
+      .timer-container.editing .seg-input {
+        caret-color: transparent !important;
+        color: transparent !important;
+      }
 
-  .timer-segment.editing .seg-value {
-    opacity: 0;
-  }
+      .timer-segment .seg-input::selection,
+      .timer-segment .seg-input::-moz-selection {
+        background: transparent !important;
+        color: transparent !important;
+      }
 
-  .timer-segment.editing .seg-input {
-    color: var(--color-text);
-  }
+      .timer-segment.editing .seg-value {
+        opacity: 1 !important;
+      }
 
-  .timer-segment.hidden-seg {
-    display: none !important;
-  }
+      .timer-segment.editing .seg-input {
+        color: transparent !important;
+        caret-color: transparent !important;
+      }
 
-  .timer-sep.hidden-sep {
-    display: none !important;
-  }
+      .timer-segment.hidden-seg {
+        display: none !important;
+      }
 
-  /* Instructions */
-  .instructions {
-    margin-top: clamp(16px, 3vh, 40px);
-    font-size: clamp(0.75rem, 1.2vw, 0.95rem);
-    font-weight: 400;
-    color: var(--color-text-dim);
-    text-align: center;
-    line-height: 1.6;
-    letter-spacing: 0.01em;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    transition: opacity 0.4s ease;
-    padding: 0 12px;
-  }
+      .timer-sep.hidden-sep {
+        display: none !important;
+      }
 
-  .instructions.hidden {
-    opacity: 0;
-    pointer-events: none;
-  }
+      /* Instructions */
+      .instructions {
+        margin-top: clamp(16px, 3vh, 40px);
+        font-size: clamp(0.75rem, 1.2vw, 0.95rem);
+        font-weight: 400;
+        color: var(--color-text-dim);
+        text-align: center;
+        line-height: 1.6;
+        letter-spacing: 0.01em;
+        font-family:
+          -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        transition: opacity 0.4s ease;
+        padding: 0 12px;
+      }
 
-  .instructions .key {
-    display: inline-block;
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    border-radius: 4px;
-    padding: 1px 6px;
-    font-size: 0.85em;
-    font-weight: 500;
-  }
+      .instructions.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
 
-  @media (max-width: 600px) {
-    .desktop-instructions {
-      display: block;
-      margin-top: 4px;
-      font-size: 0.9em;
-    }
-  }
+      .instructions .key {
+        display: inline-block;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 4px;
+        padding: 1px 6px;
+        font-size: 0.85em;
+        font-weight: 500;
+      }
 
-  /* Finished animation */
-  @keyframes finished-pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.5; }
-  }
+      @media (max-width: 600px) {
+        .desktop-instructions {
+          display: block;
+          margin-top: 4px;
+          font-size: 0.9em;
+        }
+      }
 
-  .timer-container.finished .timer-display {
-    animation: finished-pulse 1.5s ease-in-out 3;
-    color: var(--color-finished);
-  }
+      /* Finished animation */
+      @keyframes finished-pulse {
+        0%,
+        100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
 
-  .finished-screen {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    background: #ff3b30;
-    color: #ffffff;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.2s ease;
-    z-index: 10;
-  }
+      .timer-container.finished .timer-display {
+        animation: finished-pulse 1.5s ease-in-out 3;
+        color: var(--color-finished);
+      }
 
-  .finished-screen.visible {
-    opacity: 1;
-    pointer-events: auto;
-  }
+      .finished-screen {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 12px;
+        background: #ff3b30;
+        color: #ffffff;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+        z-index: 10;
+      }
 
-  .finished-screen__message {
-    font-size: clamp(2.5rem, 12vw, 11rem);
-    font-weight: 900;
-    letter-spacing: -0.04em;
-    line-height: 0.95;
-    text-align: center;
-    padding: 0 24px;
-  }
+      .finished-screen.visible {
+        opacity: 1;
+        pointer-events: auto;
+      }
 
-  .finished-screen__subtext {
-    margin-top: 12px;
-    font-size: clamp(0.85rem, 3vw, 1.2rem);
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    color: rgba(255, 255, 255, 0.88);
-  }
+      .finished-screen__message {
+        font-size: clamp(2.5rem, 12vw, 11rem);
+        font-weight: 900;
+        letter-spacing: -0.04em;
+        line-height: 0.95;
+        text-align: center;
+        padding: 0 24px;
+      }
 
-  /* Responsive adjustments */
-  @media (max-width: 480px) {
-    #app { padding: 12px 8px; }
-    .timer-display { font-size: clamp(3.5rem, 17vw, 8rem); }
-    .timer-display.has-hours { font-size: clamp(2.4rem, 11vw, 6rem); }
-    .instructions { margin-top: 16px; font-size: 0.8rem; }
-  }
+      .finished-screen__subtext {
+        margin-top: 12px;
+        font-size: clamp(0.85rem, 3vw, 1.2rem);
+        font-weight: 600;
+        letter-spacing: 0.04em;
+        color: rgba(255, 255, 255, 0.88);
+      }
 
-  @media (max-width: 360px) {
-    .timer-display { font-size: clamp(3rem, 16vw, 6rem); }
-    .timer-display.has-hours { font-size: clamp(2rem, 10.5vw, 5rem); }
-  }
+      /* Settings Gear Button */
+      .settings-btn {
+        position: absolute;
+        top: clamp(16px, 3vh, 28px);
+        right: clamp(16px, 3vw, 28px);
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.07);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: rgba(255, 255, 255, 0.8);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 30;
+        transition:
+          opacity 0.4s ease,
+          transform 0.2s ease,
+          background 0.2s ease;
+        backdrop-filter: blur(10px);
+        -webkit-backdrop-filter: blur(10px);
+        outline: none;
+        -webkit-tap-highlight-color: transparent;
+      }
 
-  @media (orientation: landscape) and (max-height: 500px) {
-    .timer-display { font-size: clamp(3rem, 18vh, 10rem); }
-    .timer-display.has-hours { font-size: clamp(2.2rem, 14vh, 8rem); }
-    .instructions { margin-top: 6px; font-size: 0.75rem; }
-  }
+      .settings-btn:hover {
+        background: rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        transform: rotate(30deg);
+      }
 
-  @media (prefers-contrast: high) {
-    :root { --color-text-dim: rgba(255, 255, 255, 0.7); }
-    .timer-container.finished .timer-digits { color: #ff0000; }
-  }
+      .settings-btn.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
 
-  @media (prefers-reduced-motion: reduce) {
-    .timer-container.finished .timer-display { animation: none; }
-  }
-</style>
-</head>
-<body>
-<div id="app" role="main" aria-label="Countdown timer">
-  <div
-    id="timer-container"
-    class="timer-container"
-    role="timer"
-    aria-live="polite"
-    aria-atomic="true"
-    tabindex="0"
-  >
-    <div id="timer-display" class="timer-display" aria-hidden="true">
-      <span class="timer-segment hidden-seg" data-field="hours" tabindex="-1">
-        <span class="seg-value">00</span>
-        <input class="seg-input" type="text" inputmode="numeric" maxlength="2" autocomplete="off" spellcheck="false" aria-label="Hours" />
-      </span>
-      <span class="timer-sep hidden-sep">:</span>
-      <span class="timer-segment" data-field="minutes" tabindex="-1">
-        <span class="seg-value">55</span>
-        <input class="seg-input" type="text" inputmode="numeric" maxlength="2" autocomplete="off" spellcheck="false" aria-label="Minutes" />
-      </span>
-      <span class="timer-sep">:</span>
-      <span class="timer-segment" data-field="seconds" tabindex="-1">
-        <span class="seg-value">00</span>
-        <input class="seg-input" type="text" inputmode="numeric" maxlength="2" autocomplete="off" spellcheck="false" aria-label="Seconds" />
-      </span>
+      .settings-btn svg {
+        width: 22px;
+        height: 22px;
+        fill: currentColor;
+      }
+
+      /* Settings Modal Overlay */
+      .settings-modal-overlay {
+        position: fixed;
+        inset: 0;
+        background: rgba(0, 0, 0, 0.65);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 100;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.25s ease;
+        padding: 16px;
+      }
+
+      .settings-modal-overlay.open {
+        opacity: 1;
+        pointer-events: auto;
+      }
+
+      .settings-card {
+        background: rgba(24, 24, 24, 0.92);
+        border: 1px solid rgba(255, 255, 255, 0.14);
+        border-radius: 16px;
+        width: 100%;
+        max-width: 440px;
+        max-height: 85vh;
+        overflow-y: auto;
+        padding: 24px;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+        color: #ffffff;
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        transform: scale(0.95);
+        transition: transform 0.25s ease;
+      }
+
+      .settings-modal-overlay.open .settings-card {
+        transform: scale(1);
+      }
+
+      .settings-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .settings-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .settings-close {
+        background: rgba(255, 255, 255, 0.08);
+        border: none;
+        color: rgba(255, 255, 255, 0.6);
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        font-size: 1rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          background 0.15s ease,
+          color 0.15s ease;
+      }
+
+      .settings-close:hover {
+        background: rgba(255, 255, 255, 0.2);
+        color: #ffffff;
+      }
+
+      .settings-group {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .settings-label {
+        font-size: 0.82rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: rgba(255, 255, 255, 0.45);
+      }
+
+      .settings-options-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+      }
+
+      .setting-opt-btn {
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.75);
+        border-radius: 10px;
+        padding: 10px 8px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        text-align: center;
+        transition: all 0.15s ease;
+        user-select: none;
+      }
+
+      .setting-opt-btn:hover {
+        background: rgba(255, 255, 255, 0.14);
+        color: #ffffff;
+      }
+
+      .setting-opt-btn.active {
+        background: #ffffff;
+        color: #000000;
+        border-color: #ffffff;
+      }
+
+      .settings-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 10px;
+        padding: 12px 14px;
+      }
+
+      .settings-row-label {
+        font-size: 0.9rem;
+        font-weight: 500;
+      }
+
+      /* Toggle Switch */
+      .switch {
+        position: relative;
+        display: inline-block;
+        width: 44px;
+        height: 24px;
+      }
+
+      .switch input {
+        opacity: 0;
+        width: 0;
+        height: 0;
+      }
+
+      .slider {
+        position: absolute;
+        cursor: pointer;
+        inset: 0;
+        background-color: rgba(255, 255, 255, 0.2);
+        transition: 0.2s;
+        border-radius: 24px;
+      }
+
+      .slider:before {
+        position: absolute;
+        content: "";
+        height: 18px;
+        width: 18px;
+        left: 3px;
+        bottom: 3px;
+        background-color: white;
+        transition: 0.2s;
+        border-radius: 50%;
+      }
+
+      input:checked + .slider {
+        background-color: #ff3b30;
+      }
+
+      input:checked + .slider:before {
+        transform: translateX(20px);
+      }
+
+      .volume-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 4px;
+      }
+
+      .volume-slider {
+        flex: 1;
+        accent-color: #ff3b30;
+        cursor: pointer;
+      }
+
+      .btn-secondary {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: #ffffff;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      .btn-secondary:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 480px) {
+        #app {
+          padding: 12px 6px;
+        }
+        .timer-display {
+          font-size: clamp(3rem, 15vw, 7.5rem);
+        }
+        .timer-display.has-hours {
+          font-size: clamp(2rem, 9.5vw, 4.8rem);
+        }
+        .instructions {
+          margin-top: 12px;
+          font-size: clamp(0.68rem, 2.8vw, 0.75rem);
+          padding: 0 8px;
+        }
+        .settings-options-grid {
+          grid-template-columns: repeat(2, 1fr);
+        }
+      }
+
+      @media (max-width: 360px) {
+        .timer-display {
+          font-size: clamp(2.5rem, 14vw, 5.8rem);
+        }
+        .timer-display.has-hours {
+          font-size: clamp(1.7rem, 9vw, 3.8rem);
+        }
+        .instructions {
+          font-size: 0.65rem;
+        }
+      }
+
+      @media (max-width: 600px), (hover: none) and (pointer: coarse) {
+        .desktop-instructions {
+          display: none !important;
+        }
+      }
+
+      @media (orientation: landscape) and (max-height: 500px) {
+        #app {
+          padding: 8px 16px;
+        }
+        .timer-display {
+          font-size: clamp(4.5rem, 50vh, 18rem);
+        }
+        .timer-display.has-hours {
+          font-size: clamp(3.5rem, 40vh, 14rem);
+        }
+        .instructions {
+          margin-top: clamp(6px, 2vh, 12px);
+          font-size: clamp(0.7rem, 2.5vh, 0.85rem);
+          padding: 0 8px;
+        }
+        .desktop-instructions {
+          display: none !important;
+        }
+      }
+
+      @media (prefers-contrast: high) {
+        :root {
+          --color-text-dim: rgba(255, 255, 255, 0.7);
+        }
+        .timer-container.finished .timer-digits {
+          color: #ff0000;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .timer-container.finished .timer-display {
+          animation: none;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="app" role="main" aria-label="Countdown timer">
+      <!-- Settings Button -->
+      <button
+        id="settings-btn"
+        class="settings-btn"
+        aria-label="Settings"
+        title="Settings"
+      >
+        <svg viewBox="0 0 24 24">
+          <path
+            d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"
+          />
+        </svg>
+      </button>
+
+      <div
+        id="timer-container"
+        class="timer-container"
+        role="timer"
+        aria-live="polite"
+        aria-atomic="true"
+        tabindex="0"
+      >
+        <div id="timer-display" class="timer-display" aria-hidden="true">
+          <span
+            class="timer-segment hidden-seg"
+            data-field="hours"
+            tabindex="-1"
+          >
+            <span class="seg-value">00</span>
+            <input
+              class="seg-input"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="2"
+              autocomplete="off"
+              spellcheck="false"
+              aria-label="Hours"
+            />
+          </span>
+          <span class="timer-sep hidden-sep">:</span>
+          <span class="timer-segment" data-field="minutes" tabindex="-1">
+            <span class="seg-value">55</span>
+            <input
+              class="seg-input"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="2"
+              autocomplete="off"
+              spellcheck="false"
+              aria-label="Minutes"
+            />
+          </span>
+          <span class="timer-sep">:</span>
+          <span class="timer-segment" data-field="seconds" tabindex="-1">
+            <span class="seg-value">00</span>
+            <input
+              class="seg-input"
+              type="text"
+              inputmode="numeric"
+              pattern="[0-9]*"
+              maxlength="2"
+              autocomplete="off"
+              spellcheck="false"
+              aria-label="Seconds"
+            />
+          </span>
+        </div>
+      </div>
+      <div id="finished-screen" class="finished-screen" aria-hidden="true">
+        <div class="finished-screen__message">Time's Up</div>
+        <div class="finished-screen__subtext">
+          Tap anywhere or press R to reset
+        </div>
+      </div>
+      <p id="instructions" class="instructions" aria-hidden="true">
+        Tap time field to edit · Tap anywhere else to start/pause
+        <span class="desktop-instructions"
+          >· <span class="key">Space</span> start/pause ·
+          <span class="key">R</span> reset ·
+          <span class="key">F</span> fullscreen</span
+        >
+      </p>
     </div>
-  </div>
-  <div id="finished-screen" class="finished-screen" aria-hidden="true">
-    <div class="finished-screen__message">Time's Up</div>
-    <div class="finished-screen__subtext">Tap anywhere or press R to reset</div>
-  </div>
-  <p id="instructions" class="instructions" aria-hidden="true">
-    Tap time field to edit · Tap anywhere else to start/pause
-    <span class="desktop-instructions">· <span class="key">Space</span> start/pause · <span class="key">R</span> reset · <span class="key">F</span> fullscreen</span>
-  </p>
-</div>
-
-<script>
-(function() {
-  'use strict';
-
-  const DEFAULT_SECONDS = 3300;
-
-  // ─── State ────────────────────────────────────────────────────────────────
-  const state = {
-    configuredSeconds: DEFAULT_SECONDS,
-    remainingSeconds: DEFAULT_SECONDS,
-    status: 'idle',
-    endTimestamp: null,
-    lastTickId: null,
-    previousValidSeconds: DEFAULT_SECONDS,
-    editingField: null,
-  };
-
-  // ─── DOM Refs ─────────────────────────────────────────────────────────────
-  const appEl = document.getElementById('app');
-  const container = document.getElementById('timer-container');
-  const displayEl = document.getElementById('timer-display');
-  const finishedScreenEl = document.getElementById('finished-screen');
-  const instructionsEl = document.getElementById('instructions');
-  const bodyEl = document.body;
-
-  const segHours = document.querySelector('.timer-segment[data-field="hours"]');
-  const segMinutes = document.querySelector('.timer-segment[data-field="minutes"]');
-  const segSeconds = document.querySelector('.timer-segment[data-field="seconds"]');
-
-  const inpHours = segHours.querySelector('.seg-input');
-  const inpMinutes = segMinutes.querySelector('.seg-input');
-  const inpSeconds = segSeconds.querySelector('.seg-input');
-
-  const valHours = segHours.querySelector('.seg-value');
-  const valMinutes = segMinutes.querySelector('.seg-value');
-  const valSeconds = segSeconds.querySelector('.seg-value');
-
-  const sepEls = displayEl.querySelectorAll('.timer-sep');
-
-  // ─── Storage Key ──────────────────────────────────────────────────────────
-  const STORAGE_KEY = 'countdown_configured_seconds';
-
-  // ─── Cursor Fade ─────────────────────────────────────────────────────────
-  let cursorFadeTimer = null;
-  let cursorHideAt = 0;
-
-  function showCursor() {
-    if (state.status === 'running') {
-      bodyEl.classList.add('mouse-active');
-    }
-    cursorHideAt = Date.now() + 5000;
-    resetCursorFade();
-  }
-
-  function isSpaceKey(e) {
-    return e.code === 'Space' || e.key === ' ' || e.key === 'Space' || e.key === 'Spacebar';
-  }
-
-  function clampHoursValue(value) {
-    return Math.max(0, Math.min(99, value));
-  }
-
-  function setFieldValue(input, value) {
-    input.value = String(Math.max(0, Math.min(99, value))).padStart(2, '0');
-  }
-
-  function getEditingTotal() {
-    const h = parseInt(inpHours.value, 10) || 0;
-    const m = parseInt(inpMinutes.value, 10) || 0;
-    const s = parseInt(inpSeconds.value, 10) || 0;
-    return h * 3600 + m * 60 + s;
-  }
-
-  function syncEditingFields(totalSeconds) {
-    const fmt = formatTime(totalSeconds);
-    inpHours.value = fmt.hours;
-    inpMinutes.value = fmt.minutes;
-    inpSeconds.value = fmt.seconds;
-    setHoursVisible(fmt.hasHours);
-    return fmt;
-  }
-
-  function adjustField(field, delta) {
-    const input = { hours: inpHours, minutes: inpMinutes, seconds: inpSeconds }[field];
-    const step = field === 'hours' ? 3600 : field === 'minutes' ? 60 : 1;
-    const total = getEditingTotal() + (delta * step);
-    syncEditingFields(total);
-    render();
-    requestAnimationFrame(() => {
-      input.setSelectionRange(0, input.value.length);
-    });
-  }
-
-  function resetCursorFade() {
-    if (cursorFadeTimer) {
-      clearTimeout(cursorFadeTimer);
-      cursorFadeTimer = null;
-    }
-    if (state.status === 'running') {
-      cursorFadeTimer = setTimeout(function() {
-        bodyEl.classList.remove('mouse-active');
-        cursorFadeTimer = null;
-        cursorHideAt = 0;
-      }, 5000);
-    }
-  }
-
-  // Mouse movement → show cursor, then fade after 5s
-  document.addEventListener('mousemove', showCursor);
-  document.addEventListener('mousedown', showCursor);
-  document.addEventListener('keydown', function(e) {
-    if (state.status !== 'editing' || !isSpaceKey(e)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    commitEditing();
-    if (state.remainingSeconds > 0) startCountdown();
-  }, true);
-  document.addEventListener('keyup', function(e) {
-    if (state.status !== 'editing' || !isSpaceKey(e)) return;
-    e.preventDefault();
-    e.stopPropagation();
-    commitEditing();
-    if (state.remainingSeconds > 0) startCountdown();
-  }, true);
-  document.addEventListener('keydown', function() {
-    if (state.status === 'running') {
-      bodyEl.classList.add('mouse-active');
-      resetCursorFade();
-    }
-  });
-
-  // ─── Time Utilities ───────────────────────────────────────────────────────
-
-  function formatTime(totalSeconds) {
-    if (totalSeconds < 0) totalSeconds = 0;
-    if (totalSeconds > 359999) totalSeconds = 359999;
-    const hours = Math.floor(totalSeconds / 3600);
-    const minutes = Math.floor((totalSeconds % 3600) / 60);
-    const seconds = totalSeconds % 60;
-    return {
-      hours: String(hours).padStart(2, '0'),
-      minutes: String(minutes).padStart(2, '0'),
-      seconds: String(seconds).padStart(2, '0'),
-      hasHours: hours > 0
-    };
-  }
-
-  // ─── Show/hide hours segment ──────────────────────────────────────────────
-
-  function setHoursVisible(visible) {
-    segHours.classList.toggle('hidden-seg', !visible);
-    sepEls[0].classList.toggle('hidden-sep', !visible);
-  }
-
-  function getEditingFieldValues() {
-    return {
-      hours: parseInt(inpHours.value, 10) || 0,
-      minutes: parseInt(inpMinutes.value, 10) || 0,
-      seconds: parseInt(inpSeconds.value, 10) || 0,
-    };
-  }
-
-  document.addEventListener('keydown', function(e) {
-    if (!(e.key === 'ArrowUp' || e.key === 'ArrowDown')) return;
-    if (state.status === 'running') return;
-    const activeSegment = document.activeElement && document.activeElement.closest('.timer-segment');
-    if (state.status === 'editing' && activeSegment) return;
-    e.preventDefault();
-    e.stopPropagation();
-    if (state.status !== 'editing') {
-      focusSegment('minutes');
-    }
-    adjustField('minutes', e.key === 'ArrowUp' ? 1 : -1);
-  }, true);
-
-  // ─── Render ───────────────────────────────────────────────────────────────
-
-  function render() {
-    const isEditing = state.status === 'editing';
-    const displaySeconds = isEditing ? getFieldSeconds() : state.remainingSeconds;
-
-    if (isEditing) {
-      const raw = getEditingFieldValues();
-      valHours.textContent = String(raw.hours).padStart(2, '0');
-      valMinutes.textContent = String(raw.minutes).padStart(2, '0');
-      valSeconds.textContent = String(raw.seconds).padStart(2, '0');
-      displayEl.classList.toggle('has-hours', raw.hours > 0);
-      setHoursVisible(raw.hours > 0);
-    } else {
-      const fmt = formatTime(displaySeconds);
-      valHours.textContent = fmt.hours;
-      valMinutes.textContent = fmt.minutes;
-      valSeconds.textContent = fmt.seconds;
-      displayEl.classList.toggle('has-hours', fmt.hasHours);
-
-      setHoursVisible(fmt.hasHours);
-    }
-
-    // Update body class for cursor
-    const isRunning = state.status === 'running';
-    bodyEl.classList.toggle('running', isRunning);
-    if (!isRunning) {
-      bodyEl.classList.remove('mouse-active');
-      if (cursorFadeTimer) {
-        clearTimeout(cursorFadeTimer);
-        cursorFadeTimer = null;
-      }
-      cursorHideAt = 0;
-    } else if (bodyEl.classList.contains('mouse-active') && cursorHideAt && Date.now() >= cursorHideAt) {
-      bodyEl.classList.remove('mouse-active');
-      if (cursorFadeTimer) {
-        clearTimeout(cursorFadeTimer);
-        cursorFadeTimer = null;
-      }
-      cursorHideAt = 0;
-    }
-
-    // ARIA label
-    const h = isEditing ? getEditingFieldValues().hours : Math.floor(displaySeconds / 3600);
-    const m = isEditing ? getEditingFieldValues().minutes : Math.floor((displaySeconds % 3600) / 60);
-    const s = isEditing ? getEditingFieldValues().seconds : displaySeconds % 60;
-    let ariaParts = [];
-    if (h > 0) ariaParts.push(`${h} hours`);
-    if (m > 0) ariaParts.push(`${m} minutes`);
-    if (s > 0 || (h === 0 && m === 0)) ariaParts.push(`${s} seconds`);
-    const label = { idle: 'Ready', running: 'Running', paused: 'Paused', finished: 'Finished', editing: 'Editing' }[state.status] || '';
-    container.setAttribute('aria-label', `Countdown timer, ${ariaParts.join(' ')}, ${label}`);
-
-    // CSS classes
-    container.classList.remove('idle', 'running', 'paused', 'finished', 'editing');
-    container.classList.add(state.status);
-    bodyEl.classList.toggle('editing', state.status === 'editing');
-
-    const isFinished = state.status === 'finished';
-    finishedScreenEl.classList.toggle('visible', isFinished);
-    finishedScreenEl.setAttribute('aria-hidden', String(!isFinished));
-
-    // Hide instructions when editing or running
-    instructionsEl.classList.toggle('hidden', state.status === 'editing' || state.status === 'running');
-  }
-
-  // ─── Countdown Logic ───────────────────────────────────────────────────────
-
-  function tick() {
-    if (state.status !== 'running') return;
-    if (!state.endTimestamp) { stopCountdown(); return; }
-
-    const now = Date.now();
-    const remainingMs = state.endTimestamp - now;
-    const newRemaining = Math.max(0, Math.ceil(remainingMs / 1000));
-
-    if (newRemaining !== state.remainingSeconds) {
-      state.remainingSeconds = newRemaining;
-      render();
-    }
-
-    if (state.remainingSeconds <= 0) {
-      state.remainingSeconds = 0;
-      state.status = 'finished';
-      state.endTimestamp = null;
-      render();
-      return;
-    }
-
-    state.lastTickId = requestAnimationFrame(tick);
-  }
-
-  function startCountdown() {
-    if (state.remainingSeconds <= 0) return;
-    state.status = 'running';
-    state.endTimestamp = Date.now() + state.remainingSeconds * 1000;
-    render();
-    if (state.lastTickId) cancelAnimationFrame(state.lastTickId);
-    state.lastTickId = requestAnimationFrame(tick);
-  }
-
-  function pauseCountdown() {
-    if (state.status !== 'running') return;
-    if (state.endTimestamp) {
-      const now = Date.now();
-      const remainingMs = state.endTimestamp - now;
-      state.remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
-    }
-    state.status = 'paused';
-    state.endTimestamp = null;
-    if (state.lastTickId) { cancelAnimationFrame(state.lastTickId); state.lastTickId = null; }
-    render();
-  }
-
-  function stopCountdown() {
-    if (state.lastTickId) { cancelAnimationFrame(state.lastTickId); state.lastTickId = null; }
-    state.endTimestamp = null;
-  }
-
-  function resetCountdown() {
-    stopCountdown();
-    state.remainingSeconds = state.configuredSeconds;
-    state.status = state.remainingSeconds > 0 ? 'idle' : 'finished';
-    render();
-  }
-
-  function setDuration(seconds) {
-    if (seconds === null || seconds === undefined || isNaN(seconds)) return;
-    seconds = Math.max(0, Math.min(359999, Math.round(seconds)));
-    state.configuredSeconds = seconds;
-    state.remainingSeconds = seconds;
-    state.status = seconds > 0 ? 'idle' : 'finished';
-    try { localStorage.setItem(STORAGE_KEY, String(seconds)); } catch (e) { /* ignore */ }
-    render();
-  }
-
-  // ─── Editing ──────────────────────────────────────────────────────────────
-
-  function getFieldSeconds() {
-    const h = parseInt(inpHours.value, 10) || 0;
-    const m = parseInt(inpMinutes.value, 10) || 0;
-    const s = parseInt(inpSeconds.value, 10) || 0;
-    return h * 3600 + m * 60 + s;
-  }
-
-  function focusSegment(field) {
-    if (state.status === 'editing' && state.editingField === field) return;
-
-    if (state.status !== 'editing') {
-      state.previousValidSeconds = state.configuredSeconds;
-      state.status = 'editing';
-      if (state.lastTickId) { cancelAnimationFrame(state.lastTickId); state.lastTickId = null; }
-      state.endTimestamp = null;
-
-      const fmt = formatTime(state.configuredSeconds);
-      inpHours.value = fmt.hours;
-      inpMinutes.value = fmt.minutes;
-      inpSeconds.value = fmt.seconds;
-
-      setHoursVisible(fmt.hasHours || parseInt(inpMinutes.value, 10) >= 60);
-    }
-
-    state.editingField = field;
-    render();
-
-    const inputs = { hours: inpHours, minutes: inpMinutes, seconds: inpSeconds };
-    inputs[field].focus();
-    inputs[field].select();
-  }
-
-  function commitEditing() {
-    if (state.status !== 'editing') return;
-
-    const total = Math.min(359999, getEditingTotal());
-    const fmt = syncEditingFields(total);
-
-    setDuration(total);
-    state.status = 'idle';
-    state.editingField = null;
-    render();
-    container.focus();
-  }
-
-  function cancelEditing() {
-    if (state.status !== 'editing') return;
-    setDuration(state.previousValidSeconds);
-    state.status = 'idle';
-    state.editingField = null;
-    render();
-    container.focus();
-  }
-
-  // ─── Input Handlers ───────────────────────────────────────────────────────
-
-  function onSegKeydown(e, field) {
-    if (isSpaceKey(e)) {
-      e.preventDefault();
-      e.stopPropagation();
-      commitEditing();
-      if (state.remainingSeconds > 0) startCountdown();
-      return;
-    }
-
-    if (e.key.length === 1 && !/[\d]/.test(e.key)) {
-      e.preventDefault();
-      return;
-    }
-
-    if (e.key === 'Enter') { e.preventDefault(); commitEditing(); return; }
-    if (e.key === 'Escape') { e.preventDefault(); cancelEditing(); return; }
-
-    const fields = ['hours', 'minutes', 'seconds'];
-    const idx = fields.indexOf(field);
-
-    if (e.key === 'Tab') {
-      e.preventDefault();
-      if (e.shiftKey) {
-        if (idx > 0) focusSegment(fields[idx - 1]);
-      } else {
-        if (idx < fields.length - 1) focusSegment(fields[idx + 1]);
-        else commitEditing();
-      }
-      return;
-    }
-
-    if (e.key === 'ArrowRight') {
-      e.preventDefault();
-      if (idx < fields.length - 1) focusSegment(fields[idx + 1]);
-      return;
-    }
-
-    if (e.key === 'ArrowLeft') {
-      e.preventDefault();
-      if (idx > 0) focusSegment(fields[idx - 1]);
-      return;
-    }
-
-    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
-      e.preventDefault();
-      adjustField(field, e.key === 'ArrowUp' ? 1 : -1);
-      return;
-    }
-
-    if (/^\d$/.test(e.key)) {
-      const input = { hours: inpHours, minutes: inpMinutes, seconds: inpSeconds }[field];
-      requestAnimationFrame(() => {
-        if (input.value.length >= 2) {
-          if (idx < fields.length - 1) {
-            focusSegment(fields[idx + 1]);
-          } else {
-            commitEditing();
+
+    <!-- Settings Modal Overlay -->
+    <div id="settings-modal" class="settings-modal-overlay" aria-hidden="true">
+      <div
+        class="settings-card"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Timer Settings"
+      >
+        <div class="settings-header">
+          <div class="settings-title">Settings</div>
+          <button
+            id="close-settings-btn"
+            class="settings-close"
+            aria-label="Close settings"
+          >
+            ✕
+          </button>
+        </div>
+
+        <!-- Font Family -->
+        <div class="settings-group">
+          <div class="settings-label">Font Style</div>
+          <div class="settings-options-grid" id="font-family-options">
+            <button class="setting-opt-btn active" data-font="Inter">
+              Inter
+            </button>
+            <button class="setting-opt-btn" data-font="InterTight">
+              Inter Tight
+            </button>
+            <button class="setting-opt-btn" data-font="Saira">Saira</button>
+            <button class="setting-opt-btn" data-font="Roboto">Roboto</button>
+            <button class="setting-opt-btn" data-font="Outfit">Outfit</button>
+            <button class="setting-opt-btn" data-font="JetBrainsMono">
+              JetBrains
+            </button>
+          </div>
+        </div>
+
+        <!-- Vertical Height Scale -->
+        <div class="settings-group">
+          <div class="settings-label">Vertical Height Elongation</div>
+          <div class="settings-options-grid" id="font-scale-options">
+            <button class="setting-opt-btn" data-scale="1.0">
+              Standard 1.0x
+            </button>
+            <button class="setting-opt-btn active" data-scale="1.08">
+              Subtle 1.08x
+            </button>
+            <button class="setting-opt-btn" data-scale="1.15">
+              Tall 1.15x
+            </button>
+          </div>
+        </div>
+
+        <!-- Sound Alarm Controls -->
+        <div class="settings-group">
+          <div class="settings-label">Sound & Audio Alarm</div>
+          <div class="settings-row">
+            <span class="settings-row-label">Completion Alarm Sound</span>
+            <label class="switch">
+              <input type="checkbox" id="sound-toggle" checked />
+              <span class="slider"></span>
+            </label>
+          </div>
+          <div
+            class="settings-row"
+            style="flex-direction: column; align-items: stretch; gap: 8px"
+          >
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+              "
+            >
+              <span class="settings-row-label">Volume</span>
+              <button id="test-sound-btn" class="btn-secondary">
+                Test Alarm Sound
+              </button>
+            </div>
+            <div class="volume-controls">
+              <input
+                type="range"
+                id="volume-slider"
+                class="volume-slider"
+                min="0"
+                max="100"
+                value="80"
+              />
+            </div>
+          </div>
+        </div>
+
+        <!-- Quick Presets -->
+        <div class="settings-group">
+          <div class="settings-label">Quick Presets</div>
+          <div class="settings-options-grid">
+            <button class="setting-opt-btn preset-btn" data-seconds="300">
+              5 min
+            </button>
+            <button class="setting-opt-btn preset-btn" data-seconds="600">
+              10 min
+            </button>
+            <button class="setting-opt-btn preset-btn" data-seconds="900">
+              15 min
+            </button>
+            <button class="setting-opt-btn preset-btn" data-seconds="1500">
+              25 min
+            </button>
+            <button class="setting-opt-btn preset-btn" data-seconds="2700">
+              45 min
+            </button>
+            <button class="setting-opt-btn preset-btn" data-seconds="3600">
+              60 min
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        "use strict";
+
+        const DEFAULT_SECONDS = 3300;
+        const SETTINGS_STORAGE_KEY = "countdown_user_settings";
+
+        // ─── State ────────────────────────────────────────────────────────────────
+        const state = {
+          configuredSeconds: DEFAULT_SECONDS,
+          remainingSeconds: DEFAULT_SECONDS,
+          status: "idle",
+          endTimestamp: null,
+          lastTickId: null,
+          previousValidSeconds: DEFAULT_SECONDS,
+          editingField: null,
+          // Settings state
+          fontFamily: "Inter",
+          fontScaleY: "1.08",
+          soundEnabled: true,
+          volume: 0.8,
+        };
+
+        // ─── DOM Refs ─────────────────────────────────────────────────────────────
+        const appEl = document.getElementById("app");
+        const container = document.getElementById("timer-container");
+        const displayEl = document.getElementById("timer-display");
+        const finishedScreenEl = document.getElementById("finished-screen");
+        const instructionsEl = document.getElementById("instructions");
+        const settingsBtn = document.getElementById("settings-btn");
+        const settingsModal = document.getElementById("settings-modal");
+        const closeSettingsBtn = document.getElementById("close-settings-btn");
+        const soundToggle = document.getElementById("sound-toggle");
+        const volumeSlider = document.getElementById("volume-slider");
+        const testSoundBtn = document.getElementById("test-sound-btn");
+        const bodyEl = document.body;
+
+        const segHours = document.querySelector(
+          '.timer-segment[data-field="hours"]',
+        );
+        const segMinutes = document.querySelector(
+          '.timer-segment[data-field="minutes"]',
+        );
+        const segSeconds = document.querySelector(
+          '.timer-segment[data-field="seconds"]',
+        );
+
+        const inpHours = segHours.querySelector(".seg-input");
+        const inpMinutes = segMinutes.querySelector(".seg-input");
+        const inpSeconds = segSeconds.querySelector(".seg-input");
+
+        const valHours = segHours.querySelector(".seg-value");
+        const valMinutes = segMinutes.querySelector(".seg-value");
+        const valSeconds = segSeconds.querySelector(".seg-value");
+
+        const sepEls = displayEl.querySelectorAll(".timer-sep");
+
+        const STORAGE_KEY = "countdown_configured_seconds";
+
+        // ─── Web Audio API Sound Synthesizer ──────────────────────────────────────
+        let audioCtx = null;
+
+        function getAudioContext() {
+          if (!audioCtx) {
+            const AudioCtxClass =
+              window.AudioContext || window.webkitAudioContext;
+            if (AudioCtxClass) audioCtx = new AudioCtxClass();
+          }
+          if (audioCtx && audioCtx.state === "suspended") {
+            audioCtx.resume();
+          }
+          return audioCtx;
+        }
+
+        // Unlock AudioContext on first user tap/click anywhere
+        document.addEventListener(
+          "click",
+          function unlockAudio() {
+            getAudioContext();
+            document.removeEventListener("click", unlockAudio);
+          },
+          { once: true },
+        );
+
+        function playAlarmSound() {
+          if (!state.soundEnabled || state.volume <= 0) return;
+          const ctx = getAudioContext();
+          if (!ctx) return;
+
+          const now = ctx.currentTime;
+          const masterGain = ctx.createGain();
+          masterGain.gain.setValueAtTime(state.volume * 0.4, now);
+          masterGain.connect(ctx.destination);
+
+          // Harmonic chime pulses sequence: E5 (659Hz) -> G5 (784Hz) -> C6 (1046Hz)
+          const notes = [
+            { freq: 659.25, start: 0, duration: 0.35 },
+            { freq: 783.99, start: 0.15, duration: 0.35 },
+            { freq: 1046.5, start: 0.3, duration: 0.8 },
+            // Repeat chime pulse
+            { freq: 659.25, start: 1.0, duration: 0.35 },
+            { freq: 783.99, start: 1.15, duration: 0.35 },
+            { freq: 1046.5, start: 1.3, duration: 1.0 },
+          ];
+
+          notes.forEach((note) => {
+            const osc = ctx.createOscillator();
+            const noteGain = ctx.createGain();
+
+            osc.type = "sine";
+            osc.frequency.setValueAtTime(note.freq, now + note.start);
+
+            const noteTime = now + note.start;
+            noteGain.gain.setValueAtTime(0.001, noteTime);
+            noteGain.gain.exponentialRampToValueAtTime(0.7, noteTime + 0.04);
+            noteGain.gain.exponentialRampToValueAtTime(
+              0.001,
+              noteTime + note.duration,
+            );
+
+            osc.connect(noteGain);
+            noteGain.connect(masterGain);
+
+            osc.start(noteTime);
+            osc.stop(noteTime + note.duration);
+          });
+        }
+
+        // ─── Font Stacks ──────────────────────────────────────────────────────────
+        const fontStacks = {
+          Inter:
+            "'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
+          InterTight:
+            "'Inter Tight', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif",
+          Saira: "'Saira', -apple-system, BlinkMacSystemFont, sans-serif",
+          Roboto: "'Roboto', -apple-system, BlinkMacSystemFont, sans-serif",
+          Outfit: "'Outfit', -apple-system, BlinkMacSystemFont, sans-serif",
+          JetBrainsMono: "'JetBrains Mono', monospace",
+        };
+
+        function applyFontSettings() {
+          const stack = fontStacks[state.fontFamily] || fontStacks.Inter;
+          document.documentElement.style.setProperty("--font-timer", stack);
+          document.documentElement.style.setProperty(
+            "--font-scale-y",
+            state.fontScaleY,
+          );
+
+          // Update active state in settings modal
+          document
+            .querySelectorAll("#font-family-options .setting-opt-btn")
+            .forEach((btn) => {
+              btn.classList.toggle(
+                "active",
+                btn.getAttribute("data-font") === state.fontFamily,
+              );
+            });
+          document
+            .querySelectorAll("#font-scale-options .setting-opt-btn")
+            .forEach((btn) => {
+              btn.classList.toggle(
+                "active",
+                btn.getAttribute("data-scale") === state.fontScaleY,
+              );
+            });
+
+          soundToggle.checked = state.soundEnabled;
+          volumeSlider.value = Math.round(state.volume * 100);
+        }
+
+        function saveSettings() {
+          try {
+            localStorage.setItem(
+              SETTINGS_STORAGE_KEY,
+              JSON.stringify({
+                fontFamily: state.fontFamily,
+                fontScaleY: state.fontScaleY,
+                soundEnabled: state.soundEnabled,
+                volume: state.volume,
+              }),
+            );
+          } catch (e) {
+            /* ignore */
           }
         }
-      });
-    }
-  }
 
-  function onSegInput(e) {
-    this.value = this.value.replace(/[^0-9]/g, '').slice(0, 2);
-    render();
-  }
-
-  // ─── Event Handlers ───────────────────────────────────────────────────────
-
-  [segHours, segMinutes, segSeconds].forEach((seg, i) => {
-    const field = ['hours', 'minutes', 'seconds'][i];
-    const input = seg.querySelector('.seg-input');
-
-    seg.addEventListener('click', function(e) {
-      e.stopPropagation();
-      focusSegment(field);
-    });
-
-    input.addEventListener('focus', function() {
-      if (state.status !== 'editing') {
-        focusSegment(field);
-      } else {
-        state.editingField = field;
-        render();
-      }
-    });
-
-    input.addEventListener('blur', function() {
-      setTimeout(() => {
-        if (state.status === 'editing' && !document.activeElement.closest('.timer-segment')) {
-          commitEditing();
+        function loadSettings() {
+          try {
+            const data = localStorage.getItem(SETTINGS_STORAGE_KEY);
+            if (data) {
+              const parsed = JSON.parse(data);
+              if (parsed.fontFamily && fontStacks[parsed.fontFamily])
+                state.fontFamily = parsed.fontFamily;
+              if (parsed.fontScaleY) state.fontScaleY = parsed.fontScaleY;
+              if (typeof parsed.soundEnabled === "boolean")
+                state.soundEnabled = parsed.soundEnabled;
+              if (typeof parsed.volume === "number")
+                state.volume = Math.max(0, Math.min(1, parsed.volume));
+            }
+          } catch (e) {
+            /* ignore */
+          }
+          applyFontSettings();
         }
-      }, 150);
-    });
 
-    input.addEventListener('keydown', function(e) { onSegKeydown(e, field); });
-    input.addEventListener('input', onSegInput);
-  });
+        // ─── Cursor Fade ─────────────────────────────────────────────────────────
+        let cursorFadeTimer = null;
+        let cursorHideAt = 0;
 
-  // Tapping anywhere outside time fields toggles start/pause/resume timer
-  appEl.addEventListener('click', function(e) {
-    if (e.target.closest('.timer-segment')) return;
+        function showCursor() {
+          if (state.status === "running") {
+            bodyEl.classList.add("mouse-active");
+          }
+          cursorHideAt = Date.now() + 5000;
+          resetCursorFade();
+        }
 
-    if (state.status === 'editing') {
-      commitEditing();
-      if (state.remainingSeconds > 0) {
-        startCountdown();
-      }
-    } else if (state.status === 'running') {
-      pauseCountdown();
-    } else if (state.status === 'paused' || state.status === 'idle') {
-      if (state.remainingSeconds > 0) {
-        startCountdown();
-      }
-    } else if (state.status === 'finished') {
-      resetCountdown();
-      if (state.remainingSeconds > 0) {
-        startCountdown();
-      }
-    }
-  });
+        function isSpaceKey(e) {
+          return (
+            e.code === "Space" ||
+            e.key === " " ||
+            e.key === "Space" ||
+            e.key === "Spacebar"
+          );
+        }
 
-  // Global keyboard
-  document.addEventListener('keydown', function(e) {
-    const isEditing = state.status === 'editing';
+        function clampHoursValue(value) {
+          return Math.max(0, Math.min(99, value));
+        }
 
-    if (e.code === 'Space') {
-      if (isEditing) {
-        e.preventDefault();
-        commitEditing();
-        if (state.remainingSeconds > 0) startCountdown();
-        return;
-      }
-      e.preventDefault();
-      if (state.status === 'running') pauseCountdown();
-      else if (state.status === 'paused' || state.status === 'idle') {
-        if (state.remainingSeconds > 0) startCountdown();
-      } else if (state.status === 'finished') {
-        resetCountdown();
-        if (state.remainingSeconds > 0) startCountdown();
-      }
-      return;
-    }
+        function setFieldValue(input, value) {
+          input.value = String(Math.max(0, Math.min(99, value))).padStart(
+            2,
+            "0",
+          );
+        }
 
-    if (e.key === 'r' || e.key === 'R') {
-      if (isEditing) return;
-      e.preventDefault();
-      resetCountdown();
-      return;
-    }
+        function getEditingTotal() {
+          const h = parseInt(inpHours.value, 10) || 0;
+          const m = parseInt(inpMinutes.value, 10) || 0;
+          const s = parseInt(inpSeconds.value, 10) || 0;
+          return h * 3600 + m * 60 + s;
+        }
 
-    if (e.key === 'f' || e.key === 'F') {
-      if (isEditing) return;
-      e.preventDefault();
-      toggleFullscreen();
-      return;
-    }
-  });
+        function syncEditingFields(totalSeconds) {
+          const fmt = formatTime(totalSeconds);
+          inpHours.value = fmt.hours;
+          inpMinutes.value = fmt.minutes;
+          inpSeconds.value = fmt.seconds;
+          setHoursVisible(fmt.hasHours);
+          return fmt;
+        }
 
-  // Visibility change
-  document.addEventListener('visibilitychange', function() {
-    if (!document.hidden) {
-      if (state.status === 'running' && state.endTimestamp) {
-        const now = Date.now();
-        const remainingMs = state.endTimestamp - now;
-        state.remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
-        render();
-        if (state.remainingSeconds <= 0) {
-          state.remainingSeconds = 0;
-          state.status = 'finished';
+        function adjustField(field, delta) {
+          const input = {
+            hours: inpHours,
+            minutes: inpMinutes,
+            seconds: inpSeconds,
+          }[field];
+          const step = field === "hours" ? 3600 : field === "minutes" ? 60 : 1;
+          const total = getEditingTotal() + delta * step;
+          syncEditingFields(total);
+          render();
+          requestAnimationFrame(() => {
+            input.setSelectionRange(0, input.value.length);
+          });
+        }
+
+        function resetCursorFade() {
+          if (cursorFadeTimer) {
+            clearTimeout(cursorFadeTimer);
+            cursorFadeTimer = null;
+          }
+          if (state.status === "running") {
+            cursorFadeTimer = setTimeout(function () {
+              bodyEl.classList.remove("mouse-active");
+              cursorFadeTimer = null;
+              cursorHideAt = 0;
+            }, 5000);
+          }
+        }
+
+        // Mouse movement → show cursor & settings button, then fade after 5s
+        document.addEventListener("mousemove", showCursor);
+        document.addEventListener("mousedown", showCursor);
+        document.addEventListener(
+          "keydown",
+          function (e) {
+            if (state.status !== "editing" || !isSpaceKey(e)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            commitEditing();
+            if (state.remainingSeconds > 0) startCountdown();
+          },
+          true,
+        );
+        document.addEventListener(
+          "keyup",
+          function (e) {
+            if (state.status !== "editing" || !isSpaceKey(e)) return;
+            e.preventDefault();
+            e.stopPropagation();
+            commitEditing();
+            if (state.remainingSeconds > 0) startCountdown();
+          },
+          true,
+        );
+        document.addEventListener("keydown", function () {
+          if (state.status === "running") {
+            bodyEl.classList.add("mouse-active");
+            resetCursorFade();
+          }
+        });
+
+        // ─── Time Utilities ───────────────────────────────────────────────────────
+
+        function formatTime(totalSeconds) {
+          if (totalSeconds < 0) totalSeconds = 0;
+          if (totalSeconds > 359999) totalSeconds = 359999;
+          const hours = Math.floor(totalSeconds / 3600);
+          const minutes = Math.floor((totalSeconds % 3600) / 60);
+          const seconds = totalSeconds % 60;
+          return {
+            hours: String(hours).padStart(2, "0"),
+            minutes: String(minutes).padStart(2, "0"),
+            seconds: String(seconds).padStart(2, "0"),
+            hasHours: hours > 0,
+          };
+        }
+
+        // ─── Show/hide hours segment ──────────────────────────────────────────────
+
+        function setHoursVisible(visible) {
+          segHours.classList.toggle("hidden-seg", !visible);
+          sepEls[0].classList.toggle("hidden-sep", !visible);
+        }
+
+        function getEditingFieldValues() {
+          return {
+            hours: parseInt(inpHours.value, 10) || 0,
+            minutes: parseInt(inpMinutes.value, 10) || 0,
+            seconds: parseInt(inpSeconds.value, 10) || 0,
+          };
+        }
+
+        document.addEventListener(
+          "keydown",
+          function (e) {
+            if (!(e.key === "ArrowUp" || e.key === "ArrowDown")) return;
+            if (state.status === "running") return;
+            const activeSegment =
+              document.activeElement &&
+              document.activeElement.closest(".timer-segment");
+            if (state.status === "editing" && activeSegment) return;
+            e.preventDefault();
+            e.stopPropagation();
+            if (state.status !== "editing") {
+              focusSegment("minutes");
+            }
+            adjustField("minutes", e.key === "ArrowUp" ? 1 : -1);
+          },
+          true,
+        );
+
+        // ─── Render ───────────────────────────────────────────────────────────────
+
+        function render() {
+          const isEditing = state.status === "editing";
+          const displaySeconds = isEditing
+            ? getFieldSeconds()
+            : state.remainingSeconds;
+
+          if (isEditing) {
+            const raw = getEditingFieldValues();
+            valHours.textContent = String(raw.hours).padStart(2, "0");
+            valMinutes.textContent = String(raw.minutes).padStart(2, "0");
+            valSeconds.textContent = String(raw.seconds).padStart(2, "0");
+            displayEl.classList.toggle("has-hours", raw.hours > 0);
+            setHoursVisible(raw.hours > 0);
+          } else {
+            const fmt = formatTime(displaySeconds);
+            valHours.textContent = fmt.hours;
+            valMinutes.textContent = fmt.minutes;
+            valSeconds.textContent = fmt.seconds;
+            displayEl.classList.toggle("has-hours", fmt.hasHours);
+
+            setHoursVisible(fmt.hasHours);
+          }
+
+          // Update body class for cursor
+          const isRunning = state.status === "running";
+          bodyEl.classList.toggle("running", isRunning);
+          if (!isRunning) {
+            bodyEl.classList.remove("mouse-active");
+            if (cursorFadeTimer) {
+              clearTimeout(cursorFadeTimer);
+              cursorFadeTimer = null;
+            }
+            cursorHideAt = 0;
+          } else if (
+            bodyEl.classList.contains("mouse-active") &&
+            cursorHideAt &&
+            Date.now() >= cursorHideAt
+          ) {
+            bodyEl.classList.remove("mouse-active");
+            if (cursorFadeTimer) {
+              clearTimeout(cursorFadeTimer);
+              cursorFadeTimer = null;
+            }
+            cursorHideAt = 0;
+          }
+
+          // ARIA label
+          const h = isEditing
+            ? getEditingFieldValues().hours
+            : Math.floor(displaySeconds / 3600);
+          const m = isEditing
+            ? getEditingFieldValues().minutes
+            : Math.floor((displaySeconds % 3600) / 60);
+          const s = isEditing
+            ? getEditingFieldValues().seconds
+            : displaySeconds % 60;
+          let ariaParts = [];
+          if (h > 0) ariaParts.push(`${h} hours`);
+          if (m > 0) ariaParts.push(`${m} minutes`);
+          if (s > 0 || (h === 0 && m === 0)) ariaParts.push(`${s} seconds`);
+          const label =
+            {
+              idle: "Ready",
+              running: "Running",
+              paused: "Paused",
+              finished: "Finished",
+              editing: "Editing",
+            }[state.status] || "";
+          container.setAttribute(
+            "aria-label",
+            `Countdown timer, ${ariaParts.join(" ")}, ${label}`,
+          );
+
+          // CSS classes
+          container.classList.remove(
+            "idle",
+            "running",
+            "paused",
+            "finished",
+            "editing",
+          );
+          container.classList.add(state.status);
+          bodyEl.classList.toggle("editing", state.status === "editing");
+
+          // Toggle active segment highlight
+          segHours.classList.toggle("editing-active", isEditing && state.editingField === "hours");
+          segMinutes.classList.toggle("editing-active", isEditing && state.editingField === "minutes");
+          segSeconds.classList.toggle("editing-active", isEditing && state.editingField === "seconds");
+
+          const isFinished = state.status === "finished";
+          finishedScreenEl.classList.toggle("visible", isFinished);
+          finishedScreenEl.setAttribute("aria-hidden", String(!isFinished));
+
+          // Hide instructions and settings button when editing or running (unless mouse is active)
+          const hideControls =
+            state.status === "editing" ||
+            (state.status === "running" &&
+              !bodyEl.classList.contains("mouse-active"));
+          instructionsEl.classList.toggle("hidden", hideControls);
+          settingsBtn.classList.toggle("hidden", hideControls);
+        }
+
+        // ─── Countdown Logic ───────────────────────────────────────────────────────
+
+        function tick() {
+          if (state.status !== "running") return;
+          if (!state.endTimestamp) {
+            stopCountdown();
+            return;
+          }
+
+          const now = Date.now();
+          const remainingMs = state.endTimestamp - now;
+          const newRemaining = Math.max(0, Math.ceil(remainingMs / 1000));
+
+          if (newRemaining !== state.remainingSeconds) {
+            state.remainingSeconds = newRemaining;
+            render();
+          }
+
+          if (state.remainingSeconds <= 0) {
+            state.remainingSeconds = 0;
+            state.status = "finished";
+            state.endTimestamp = null;
+            render();
+            playAlarmSound();
+            return;
+          }
+
+          state.lastTickId = requestAnimationFrame(tick);
+        }
+
+        function startCountdown() {
+          if (state.remainingSeconds <= 0) return;
+          state.status = "running";
+          state.endTimestamp = Date.now() + state.remainingSeconds * 1000;
+          render();
+          if (state.lastTickId) cancelAnimationFrame(state.lastTickId);
+          state.lastTickId = requestAnimationFrame(tick);
+        }
+
+        function pauseCountdown() {
+          if (state.status !== "running") return;
+          if (state.endTimestamp) {
+            const now = Date.now();
+            const remainingMs = state.endTimestamp - now;
+            state.remainingSeconds = Math.max(0, Math.ceil(remainingMs / 1000));
+          }
+          state.status = "paused";
           state.endTimestamp = null;
-          stopCountdown();
+          if (state.lastTickId) {
+            cancelAnimationFrame(state.lastTickId);
+            state.lastTickId = null;
+          }
           render();
         }
-      }
-      if (state.status === 'running' && !state.lastTickId) {
-        state.lastTickId = requestAnimationFrame(tick);
-      }
-    }
-  });
 
-  // ─── Fullscreen ──────────────────────────────────────────────────────────
+        function stopCountdown() {
+          if (state.lastTickId) {
+            cancelAnimationFrame(state.lastTickId);
+            state.lastTickId = null;
+          }
+          state.endTimestamp = null;
+        }
 
-  function toggleFullscreen() {
-    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
-      const el = document.documentElement;
-      if (el.requestFullscreen) el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-    } else {
-      if (document.exitFullscreen) document.exitFullscreen();
-      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-    }
-  }
+        function resetCountdown() {
+          stopCountdown();
+          state.remainingSeconds = state.configuredSeconds;
+          state.status = state.remainingSeconds > 0 ? "idle" : "finished";
+          render();
+        }
 
-  // ─── Init ─────────────────────────────────────────────────────────────────
+        function setDuration(seconds) {
+          if (seconds === null || seconds === undefined || isNaN(seconds))
+            return;
+          seconds = Math.max(0, Math.min(359999, Math.round(seconds)));
+          state.configuredSeconds = seconds;
+          state.remainingSeconds = seconds;
+          state.status = seconds > 0 ? "idle" : "finished";
+          try {
+            localStorage.setItem(STORAGE_KEY, String(seconds));
+          } catch (e) {
+            /* ignore */
+          }
+          render();
+        }
 
-  function init() {
-    setDuration(DEFAULT_SECONDS);
-    render();
-    container.focus();
-  }
+        // ─── Editing ──────────────────────────────────────────────────────────────
 
-  init();
-})();
-</script>
-</body>
+        let typedDigitsCount = 0;
+
+        function selectSegmentInput(input) {
+          typedDigitsCount = 0;
+          const trigger = () => {
+            try {
+              input.focus();
+            } catch (e) { /* ignore */ }
+          };
+          trigger();
+          requestAnimationFrame(trigger);
+        }
+
+        function getFieldSeconds() {
+          const h = parseInt(inpHours.value, 10) || 0;
+          const m = parseInt(inpMinutes.value, 10) || 0;
+          const s = parseInt(inpSeconds.value, 10) || 0;
+          return h * 3600 + m * 60 + s;
+        }
+
+        function focusSegment(field) {
+          const inputs = {
+            hours: inpHours,
+            minutes: inpMinutes,
+            seconds: inpSeconds,
+          };
+
+          if (state.status === "editing" && state.editingField === field) {
+            selectSegmentInput(inputs[field]);
+            return;
+          }
+
+          if (state.status !== "editing") {
+            state.previousValidSeconds = state.configuredSeconds;
+            state.status = "editing";
+            if (state.lastTickId) {
+              cancelAnimationFrame(state.lastTickId);
+              state.lastTickId = null;
+            }
+            state.endTimestamp = null;
+
+            const fmt = formatTime(state.configuredSeconds);
+            inpHours.value = fmt.hours;
+            inpMinutes.value = fmt.minutes;
+            inpSeconds.value = fmt.seconds;
+
+            setHoursVisible(
+              fmt.hasHours || parseInt(inpMinutes.value, 10) >= 60,
+            );
+          }
+
+          state.editingField = field;
+          showCursor();
+          render();
+          selectSegmentInput(inputs[field]);
+        }
+
+        function commitEditing() {
+          if (state.status !== "editing") return;
+
+          const total = Math.min(359999, getEditingTotal());
+          const fmt = syncEditingFields(total);
+
+          setDuration(total);
+          state.status = "idle";
+          state.editingField = null;
+          typedDigitsCount = 0;
+          showCursor();
+          render();
+          container.focus();
+        }
+
+        function cancelEditing() {
+          if (state.status !== "editing") return;
+          setDuration(state.previousValidSeconds);
+          state.status = "idle";
+          state.editingField = null;
+          typedDigitsCount = 0;
+          showCursor();
+          render();
+          container.focus();
+        }
+
+        // ─── Input Handlers ───────────────────────────────────────────────────────
+
+        function onSegKeydown(e, field) {
+          const fields = ["hours", "minutes", "seconds"];
+          const idx = fields.indexOf(field);
+          const input = {
+            hours: inpHours,
+            minutes: inpMinutes,
+            seconds: inpSeconds,
+          }[field];
+
+          if (isSpaceKey(e)) {
+            e.preventDefault();
+            e.stopPropagation();
+            commitEditing();
+            if (state.remainingSeconds > 0) startCountdown();
+            return;
+          }
+
+          if (e.key === "Enter") {
+            e.preventDefault();
+            commitEditing();
+            return;
+          }
+          if (e.key === "Escape") {
+            e.preventDefault();
+            cancelEditing();
+            return;
+          }
+
+          if (e.key === "Backspace") {
+            if (input.value.length === 0 || typedDigitsCount === 0) {
+              e.preventDefault();
+              input.value = "00";
+              typedDigitsCount = 0;
+              render();
+              if (idx > 0) {
+                focusSegment(fields[idx - 1]);
+              }
+              return;
+            }
+          }
+
+          if (e.key === "Tab") {
+            e.preventDefault();
+            if (e.shiftKey) {
+              if (idx > 0) focusSegment(fields[idx - 1]);
+            } else {
+              if (idx < fields.length - 1) focusSegment(fields[idx + 1]);
+              else commitEditing();
+            }
+            return;
+          }
+
+          if (e.key === "ArrowRight") {
+            e.preventDefault();
+            if (idx < fields.length - 1) focusSegment(fields[idx + 1]);
+            return;
+          }
+
+          if (e.key === "ArrowLeft") {
+            e.preventDefault();
+            if (idx > 0) focusSegment(fields[idx - 1]);
+            return;
+          }
+
+          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+            e.preventDefault();
+            adjustField(field, e.key === "ArrowUp" ? 1 : -1);
+            return;
+          }
+
+          if (/^\d$/.test(e.key)) {
+            if (typedDigitsCount === 0) {
+              input.value = "";
+            }
+            typedDigitsCount++;
+          } else if (e.key.length === 1 && !e.ctrlKey && !e.metaKey) {
+            e.preventDefault();
+          }
+        }
+
+        function onSegInput(e) {
+          this.value = this.value.replace(/[^0-9]/g, "").slice(0, 2);
+          render();
+
+          const field = state.editingField;
+          const fields = ["hours", "minutes", "seconds"];
+          const idx = fields.indexOf(field);
+
+          if (this.value.length >= 2 || typedDigitsCount >= 2) {
+            if (idx < fields.length - 1) {
+              focusSegment(fields[idx + 1]);
+            } else {
+              commitEditing();
+            }
+          }
+        }
+
+        // ─── Event Handlers ───────────────────────────────────────────────────────
+
+        [segHours, segMinutes, segSeconds].forEach((seg, i) => {
+          const field = ["hours", "minutes", "seconds"][i];
+          const input = seg.querySelector(".seg-input");
+
+          seg.addEventListener("click", function (e) {
+            e.stopPropagation();
+            focusSegment(field);
+          });
+
+          input.addEventListener("focus", function () {
+            if (state.status !== "editing") {
+              focusSegment(field);
+            } else {
+              state.editingField = field;
+              render();
+            }
+          });
+
+          input.addEventListener("blur", function () {
+            setTimeout(() => {
+              if (
+                state.status === "editing" &&
+                !document.activeElement.closest(".timer-segment")
+              ) {
+                commitEditing();
+              }
+            }, 150);
+          });
+
+          input.addEventListener("keydown", function (e) {
+            onSegKeydown(e, field);
+          });
+          input.addEventListener("input", onSegInput);
+        });
+
+        // Tapping anywhere outside time fields & controls toggles start/pause/resume timer
+        appEl.addEventListener("click", function (e) {
+          if (
+            e.target.closest(".timer-segment") ||
+            e.target.closest(".settings-btn") ||
+            e.target.closest(".settings-modal-overlay")
+          )
+            return;
+
+          if (state.status === "editing") {
+            commitEditing();
+            if (state.remainingSeconds > 0) {
+              startCountdown();
+            }
+          } else if (state.status === "running") {
+            pauseCountdown();
+          } else if (state.status === "paused" || state.status === "idle") {
+            if (state.remainingSeconds > 0) {
+              startCountdown();
+            }
+          } else if (state.status === "finished") {
+            resetCountdown();
+          }
+        });
+
+        finishedScreenEl.addEventListener("click", function (e) {
+          e.stopPropagation();
+          resetCountdown();
+        });
+
+        // Settings Modal Controls
+        function openSettings() {
+          if (state.status === "running") pauseCountdown();
+          settingsModal.classList.add("open");
+          settingsModal.setAttribute("aria-hidden", "false");
+        }
+
+        function closeSettings() {
+          settingsModal.classList.remove("open");
+          settingsModal.setAttribute("aria-hidden", "true");
+        }
+
+        settingsBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          openSettings();
+        });
+
+        closeSettingsBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          closeSettings();
+        });
+
+        settingsModal.addEventListener("click", function (e) {
+          if (e.target === settingsModal) closeSettings();
+        });
+
+        // Settings Option Handlers
+        document
+          .getElementById("font-family-options")
+          .addEventListener("click", function (e) {
+            const btn = e.target.closest(".setting-opt-btn");
+            if (!btn) return;
+            state.fontFamily = btn.getAttribute("data-font");
+            applyFontSettings();
+            saveSettings();
+          });
+
+        document
+          .getElementById("font-scale-options")
+          .addEventListener("click", function (e) {
+            const btn = e.target.closest(".setting-opt-btn");
+            if (!btn) return;
+            state.fontScaleY = btn.getAttribute("data-scale");
+            applyFontSettings();
+            saveSettings();
+          });
+
+        soundToggle.addEventListener("change", function () {
+          state.soundEnabled = this.checked;
+          saveSettings();
+        });
+
+        volumeSlider.addEventListener("input", function () {
+          state.volume = parseInt(this.value, 10) / 100;
+          saveSettings();
+        });
+
+        testSoundBtn.addEventListener("click", function (e) {
+          e.stopPropagation();
+          playAlarmSound();
+        });
+
+        document.querySelectorAll(".preset-btn").forEach((btn) => {
+          btn.addEventListener("click", function (e) {
+            e.stopPropagation();
+            const secs = parseInt(btn.getAttribute("data-seconds"), 10);
+            setDuration(secs);
+            closeSettings();
+          });
+        });
+
+        // Global keyboard
+        document.addEventListener("keydown", function (e) {
+          if (settingsModal.classList.contains("open")) {
+            if (e.key === "Escape") closeSettings();
+            return;
+          }
+
+          const isEditing = state.status === "editing";
+
+          if (e.code === "Space") {
+            if (isEditing) {
+              e.preventDefault();
+              commitEditing();
+              if (state.remainingSeconds > 0) startCountdown();
+              return;
+            }
+            e.preventDefault();
+            if (state.status === "running") pauseCountdown();
+            else if (state.status === "paused" || state.status === "idle") {
+              if (state.remainingSeconds > 0) startCountdown();
+            } else if (state.status === "finished") {
+              resetCountdown();
+            }
+            return;
+          }
+
+          if (e.key === "r" || e.key === "R") {
+            if (isEditing) return;
+            e.preventDefault();
+            resetCountdown();
+            return;
+          }
+
+          if (e.key === "f" || e.key === "F") {
+            if (isEditing) return;
+            e.preventDefault();
+            toggleFullscreen();
+            return;
+          }
+        });
+
+        // Visibility change
+        document.addEventListener("visibilitychange", function () {
+          if (!document.hidden) {
+            if (state.status === "running" && state.endTimestamp) {
+              const now = Date.now();
+              const remainingMs = state.endTimestamp - now;
+              state.remainingSeconds = Math.max(
+                0,
+                Math.ceil(remainingMs / 1000),
+              );
+              render();
+              if (state.remainingSeconds <= 0) {
+                state.remainingSeconds = 0;
+                state.status = "finished";
+                state.endTimestamp = null;
+                stopCountdown();
+                render();
+                playAlarmSound();
+              }
+            }
+            if (state.status === "running" && !state.lastTickId) {
+              state.lastTickId = requestAnimationFrame(tick);
+            }
+          }
+        });
+
+        // ─── Fullscreen ──────────────────────────────────────────────────────────
+
+        function toggleFullscreen() {
+          if (
+            !document.fullscreenElement &&
+            !document.webkitFullscreenElement
+          ) {
+            const el = document.documentElement;
+            if (el.requestFullscreen) el.requestFullscreen();
+            else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+          } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen)
+              document.webkitExitFullscreen();
+          }
+        }
+
+        // ─── Init ─────────────────────────────────────────────────────────────────
+
+        function init() {
+          loadSettings();
+          setDuration(DEFAULT_SECONDS);
+          render();
+          container.focus();
+        }
+
+        init();
+      })();
+    </script>
+  </body>
 </html>
