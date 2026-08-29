@@ -901,6 +901,7 @@
           fontScaleY: "1.08",
           soundEnabled: true,
           volume: 0.8,
+          wakeLockEnabled: true,
         };
 
         // ─── DOM Refs ─────────────────────────────────────────────────────────────
@@ -915,6 +916,7 @@
         const soundToggle = document.getElementById("sound-toggle");
         const volumeSlider = document.getElementById("volume-slider");
         const testSoundBtn = document.getElementById("test-sound-btn");
+        const wakeLockToggle = document.getElementById("wakelock-toggle");
         const bodyEl = document.body;
 
         const segHours = document.querySelector(
@@ -1048,6 +1050,7 @@
 
           soundToggle.checked = state.soundEnabled;
           volumeSlider.value = Math.round(state.volume * 100);
+          if (wakeLockToggle) wakeLockToggle.checked = state.wakeLockEnabled;
         }
 
         function saveSettings() {
@@ -1059,6 +1062,7 @@
                 fontScaleY: state.fontScaleY,
                 soundEnabled: state.soundEnabled,
                 volume: state.volume,
+                wakeLockEnabled: state.wakeLockEnabled,
               }),
             );
           } catch (e) {
@@ -1078,11 +1082,41 @@
                 state.soundEnabled = parsed.soundEnabled;
               if (typeof parsed.volume === "number")
                 state.volume = Math.max(0, Math.min(1, parsed.volume));
+              if (typeof parsed.wakeLockEnabled === "boolean")
+                state.wakeLockEnabled = parsed.wakeLockEnabled;
             }
           } catch (e) {
             /* ignore */
           }
           applyFontSettings();
+        }
+
+        // ─── Screen Wake Lock (Prevent Sleep) ──────────────────────────────────────
+        let wakeLockSentinel = null;
+
+        async function requestWakeLock() {
+          if (!state.wakeLockEnabled) return;
+          if ("wakeLock" in navigator && !wakeLockSentinel) {
+            try {
+              wakeLockSentinel = await navigator.wakeLock.request("screen");
+              wakeLockSentinel.addEventListener("release", () => {
+                wakeLockSentinel = null;
+              });
+            } catch (err) {
+              /* ignore wake lock request failure */
+            }
+          }
+        }
+
+        async function releaseWakeLock() {
+          if (wakeLockSentinel) {
+            try {
+              await wakeLockSentinel.release();
+            } catch (e) {
+              /* ignore */
+            }
+            wakeLockSentinel = null;
+          }
         }
 
         // ─── Cursor Fade ─────────────────────────────────────────────────────────
@@ -1346,6 +1380,13 @@
               !bodyEl.classList.contains("mouse-active"));
           instructionsEl.classList.toggle("hidden", hideControls);
           settingsBtn.classList.toggle("hidden", hideControls);
+
+          // Screen Wake Lock
+          if (state.status === "running") {
+            requestWakeLock();
+          } else {
+            releaseWakeLock();
+          }
         }
 
         // ─── Countdown Logic ───────────────────────────────────────────────────────
@@ -1808,22 +1849,27 @@
 
         // Visibility change
         document.addEventListener("visibilitychange", function () {
-          if (!document.hidden) {
-            if (state.status === "running" && state.endTimestamp) {
-              const now = Date.now();
-              const remainingMs = state.endTimestamp - now;
-              state.remainingSeconds = Math.max(
-                0,
-                Math.ceil(remainingMs / 1000),
-              );
-              render();
-              if (state.remainingSeconds <= 0) {
-                state.remainingSeconds = 0;
-                state.status = "finished";
-                state.endTimestamp = null;
-                stopCountdown();
+          if (document.hidden) {
+            releaseWakeLock();
+          } else {
+            if (state.status === "running") {
+              requestWakeLock();
+              if (state.endTimestamp) {
+                const now = Date.now();
+                const remainingMs = state.endTimestamp - now;
+                state.remainingSeconds = Math.max(
+                  0,
+                  Math.ceil(remainingMs / 1000),
+                );
                 render();
-                playAlarmSound();
+                if (state.remainingSeconds <= 0) {
+                  state.remainingSeconds = 0;
+                  state.status = "finished";
+                  state.endTimestamp = null;
+                  stopCountdown();
+                  render();
+                  playAlarmSound();
+                }
               }
             }
             if (state.status === "running" && !state.lastTickId) {
